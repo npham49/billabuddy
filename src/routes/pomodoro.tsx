@@ -14,9 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { load } from "@tauri-apps/plugin-store";
+import { BREAK_COLOR, SECONDS_IN_MINUTE, WORK_COLOR } from "@/lib/constants";
 // const FULL_DASH_ARRAY = 283
-const WORK_COLOR = "#4ade80";
-const BREAK_COLOR = "#f87171";
 
 export const Route = createFileRoute("/pomodoro")({
   component: RouteComponent,
@@ -29,7 +28,7 @@ function RouteComponent() {
   const [loading, setLoading] = useState(true);
 
   const [isRunning, setIsRunning] = useState(false);
-  const [time, setTime] = useState(workTime * 60);
+  const [time, setTime] = useState(workTime * SECONDS_IN_MINUTE);
   const [isWork, setIsWork] = useState(true);
   const [task, setTask] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -64,10 +63,10 @@ function RouteComponent() {
             playSound();
             if (isWork) {
               setIsWork(false);
-              return breakTime * 60;
+              return breakTime * SECONDS_IN_MINUTE;
             } else {
               setIsWork(true);
-              return workTime * 60;
+              return workTime * SECONDS_IN_MINUTE;
             }
           }
           return prevTime - 1;
@@ -85,15 +84,15 @@ function RouteComponent() {
 
   const resetTimer = () => {
     stopTimer();
-    setTime(workTime * 60);
+    setTime(workTime * SECONDS_IN_MINUTE);
     setIsWork(true);
     setTask("");
   };
 
   const formatTime = (seconds: number) => {
     if (loading) return "Loading...";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const mins = Math.floor(seconds / SECONDS_IN_MINUTE);
+    const secs = seconds % SECONDS_IN_MINUTE;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
@@ -105,7 +104,7 @@ function RouteComponent() {
         const storeWorkTime = await store.get<{ value: number }>("workTime");
         setBreakTime(storeBreakTime?.value || 5);
         setWorkTime(storeWorkTime?.value || 25);
-        setTime((storeWorkTime?.value || 25) * 60);
+        setTime((storeWorkTime?.value || 25) * SECONDS_IN_MINUTE);
       }
       setLoading(false);
     })();
@@ -124,8 +123,8 @@ function RouteComponent() {
             <CircularProgressbar
               value={
                 isWork
-                  ? ((workTime - time / 60) / workTime) * 100
-                  : ((breakTime - time / 60) / breakTime) * 100
+                  ? ((workTime - time / SECONDS_IN_MINUTE) / workTime) * 100
+                  : ((breakTime - time / SECONDS_IN_MINUTE) / breakTime) * 100
               }
               text={formatTime(time)}
               strokeWidth={5}
