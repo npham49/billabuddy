@@ -13,9 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-
-const WORK_TIME = 25 * 60;
-const BREAK_TIME = 5 * 60;
+import { load } from "@tauri-apps/plugin-store";
 // const FULL_DASH_ARRAY = 283
 const WORK_COLOR = "#4ade80";
 const BREAK_COLOR = "#f87171";
@@ -25,8 +23,13 @@ export const Route = createFileRoute("/pomodoro")({
 });
 
 function RouteComponent() {
+  const [workTime, setWorkTime] = useState(25);
+  const [breakTime, setBreakTime] = useState(5);
+
+  const [loading, setLoading] = useState(true);
+
   const [isRunning, setIsRunning] = useState(false);
-  const [time, setTime] = useState(WORK_TIME);
+  const [time, setTime] = useState(workTime * 60);
   const [isWork, setIsWork] = useState(true);
   const [task, setTask] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -61,10 +64,10 @@ function RouteComponent() {
             playSound();
             if (isWork) {
               setIsWork(false);
-              return BREAK_TIME;
+              return breakTime * 60;
             } else {
               setIsWork(true);
-              return WORK_TIME;
+              return workTime * 60;
             }
           }
           return prevTime - 1;
@@ -82,16 +85,32 @@ function RouteComponent() {
 
   const resetTimer = () => {
     stopTimer();
-    setTime(WORK_TIME);
+    setTime(workTime * 60);
     setIsWork(true);
     setTask("");
   };
 
   const formatTime = (seconds: number) => {
+    if (loading) return "Loading...";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+
+  useEffect(() => {
+    (async () => {
+      const store = await load("settings.json", { autoSave: true });
+      if (store) {
+        const storeBreakTime = await store.get<{ value: number }>("breakTime");
+        const storeWorkTime = await store.get<{ value: number }>("workTime");
+        setBreakTime(storeBreakTime?.value || 5);
+        setWorkTime(storeWorkTime?.value || 25);
+        setTime((storeWorkTime?.value || 25) * 60);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <div className="min-h-auto flex items-center justify-center bg-background">
       <Card className="w-96 border-0">
@@ -105,12 +124,13 @@ function RouteComponent() {
             <CircularProgressbar
               value={
                 isWork
-                  ? ((WORK_TIME - time) / WORK_TIME) * 100
-                  : ((BREAK_TIME - time) / BREAK_TIME) * 100
+                  ? ((workTime - time / 60) / workTime) * 100
+                  : ((breakTime - time / 60) / breakTime) * 100
               }
               text={formatTime(time)}
               strokeWidth={5}
               styles={buildStyles({
+                textColor: isWork ? WORK_COLOR : BREAK_COLOR,
                 textSize: "16px",
                 pathColor: isWork ? WORK_COLOR : BREAK_COLOR,
                 trailColor: "#d1d5db",
@@ -121,12 +141,20 @@ function RouteComponent() {
             {isWork ? "Work Time" : "Break Time"}
           </div>
           {task && <div className="text-center">Current Task: {task}</div>}
-          <div className="flex justify-center space-x-2">
-            <Button onClick={isRunning ? stopTimer : startTimer}>
-              {isRunning ? "Pause" : "Start"}
-            </Button>
-            <Button onClick={resetTimer} variant="outline">
-              Reset
+          <div>
+            <div className="flex justify-center space-x-2 w-full">
+              <Button
+                onClick={isRunning ? stopTimer : startTimer}
+                className="w-1/2"
+              >
+                {isRunning ? "Pause" : "Start"}
+              </Button>
+              <Button onClick={resetTimer} variant="outline" className="w-1/2">
+                Reset
+              </Button>
+            </div>
+            <Button variant="destructive" className="w-full mt-1">
+              End Task
             </Button>
           </div>
         </CardContent>
