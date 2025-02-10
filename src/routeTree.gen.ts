@@ -15,6 +15,8 @@ import { Route as SettingsImport } from './routes/settings'
 import { Route as PomodoroImport } from './routes/pomodoro'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
+import { Route as OnboardSwitchImport } from './routes/onboard/switch'
+import { Route as OnboardNewImport } from './routes/onboard/new'
 
 // Create/Update Routes
 
@@ -39,6 +41,18 @@ const AboutRoute = AboutImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const OnboardSwitchRoute = OnboardSwitchImport.update({
+  id: '/onboard/switch',
+  path: '/onboard/switch',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const OnboardNewRoute = OnboardNewImport.update({
+  id: '/onboard/new',
+  path: '/onboard/new',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -74,6 +88,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsImport
       parentRoute: typeof rootRoute
     }
+    '/onboard/new': {
+      id: '/onboard/new'
+      path: '/onboard/new'
+      fullPath: '/onboard/new'
+      preLoaderRoute: typeof OnboardNewImport
+      parentRoute: typeof rootRoute
+    }
+    '/onboard/switch': {
+      id: '/onboard/switch'
+      path: '/onboard/switch'
+      fullPath: '/onboard/switch'
+      preLoaderRoute: typeof OnboardSwitchImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -84,6 +112,8 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/pomodoro': typeof PomodoroRoute
   '/settings': typeof SettingsRoute
+  '/onboard/new': typeof OnboardNewRoute
+  '/onboard/switch': typeof OnboardSwitchRoute
 }
 
 export interface FileRoutesByTo {
@@ -91,6 +121,8 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/pomodoro': typeof PomodoroRoute
   '/settings': typeof SettingsRoute
+  '/onboard/new': typeof OnboardNewRoute
+  '/onboard/switch': typeof OnboardSwitchRoute
 }
 
 export interface FileRoutesById {
@@ -99,14 +131,35 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/pomodoro': typeof PomodoroRoute
   '/settings': typeof SettingsRoute
+  '/onboard/new': typeof OnboardNewRoute
+  '/onboard/switch': typeof OnboardSwitchRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/pomodoro' | '/settings'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/pomodoro'
+    | '/settings'
+    | '/onboard/new'
+    | '/onboard/switch'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/pomodoro' | '/settings'
-  id: '__root__' | '/' | '/about' | '/pomodoro' | '/settings'
+  to:
+    | '/'
+    | '/about'
+    | '/pomodoro'
+    | '/settings'
+    | '/onboard/new'
+    | '/onboard/switch'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/pomodoro'
+    | '/settings'
+    | '/onboard/new'
+    | '/onboard/switch'
   fileRoutesById: FileRoutesById
 }
 
@@ -115,6 +168,8 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   PomodoroRoute: typeof PomodoroRoute
   SettingsRoute: typeof SettingsRoute
+  OnboardNewRoute: typeof OnboardNewRoute
+  OnboardSwitchRoute: typeof OnboardSwitchRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -122,6 +177,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   PomodoroRoute: PomodoroRoute,
   SettingsRoute: SettingsRoute,
+  OnboardNewRoute: OnboardNewRoute,
+  OnboardSwitchRoute: OnboardSwitchRoute,
 }
 
 export const routeTree = rootRoute
@@ -137,7 +194,9 @@ export const routeTree = rootRoute
         "/",
         "/about",
         "/pomodoro",
-        "/settings"
+        "/settings",
+        "/onboard/new",
+        "/onboard/switch"
       ]
     },
     "/": {
@@ -151,6 +210,12 @@ export const routeTree = rootRoute
     },
     "/settings": {
       "filePath": "settings.tsx"
+    },
+    "/onboard/new": {
+      "filePath": "onboard/new.tsx"
+    },
+    "/onboard/switch": {
+      "filePath": "onboard/switch.tsx"
     }
   }
 }
