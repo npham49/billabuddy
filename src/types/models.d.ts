@@ -28,5 +28,5 @@ export interface CreateTimeEntry {
   task_name: string;
   note?: string;
   start_time: string; // ISO 8601 date string
-  end_time: string; // ISO 8601 date string
+  end_time?: string; // ISO 8601 date string
 }

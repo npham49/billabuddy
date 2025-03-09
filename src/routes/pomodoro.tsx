@@ -2,14 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -31,11 +23,36 @@ function RouteComponent() {
   const [time, setTime] = useState(workTime * SECONDS_IN_MINUTE);
   const [isWork, setIsWork] = useState(true);
   const [task, setTask] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
+    (async () => {
+      const store = await load("settings.json", { autoSave: true });
+      if (store) {
+        const storeBreakTime = await store.get<{ value: number }>("breakTime");
+        const storeWorkTime = await store.get<{ value: number }>("workTime");
+        const time = await store.get<{ value: number }>("time");
+        const isRunning = await store.get<{ value: boolean }>("isRunning");
+        const task = await store.get<{ value: string }>("task");
+        if (time) {
+          setTime(time.value);
+        } else {
+          if (storeWorkTime) {
+            setTime(storeWorkTime.value * SECONDS_IN_MINUTE);
+          } else {
+            setTime(25 * SECONDS_IN_MINUTE);
+          }
+        }
+        setBreakTime(storeBreakTime?.value || 5);
+        setWorkTime(storeWorkTime?.value || 25);
+        if (isRunning?.value) {
+          setTask(task?.value || "");
+          startTimer();
+        }
+      }
+      setLoading(false);
+    })();
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -72,21 +89,12 @@ function RouteComponent() {
           return prevTime - 1;
         });
       }, 1000);
-    } else {
-      setShowModal(true);
     }
   };
 
   const stopTimer = () => {
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
-  };
-
-  const resetTimer = () => {
-    stopTimer();
-    setTime(workTime * SECONDS_IN_MINUTE);
-    setIsWork(true);
-    setTask("");
   };
 
   const formatTime = (seconds: number) => {
@@ -96,19 +104,11 @@ function RouteComponent() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  useEffect(() => {
-    (async () => {
-      const store = await load("settings.json", { autoSave: true });
-      if (store) {
-        const storeBreakTime = await store.get<{ value: number }>("breakTime");
-        const storeWorkTime = await store.get<{ value: number }>("workTime");
-        setBreakTime(storeBreakTime?.value || 5);
-        setWorkTime(storeWorkTime?.value || 25);
-        setTime((storeWorkTime?.value || 25) * SECONDS_IN_MINUTE);
-      }
-      setLoading(false);
-    })();
-  }, []);
+  const endTask = () => {
+    stopTimer();
+    setIsRunning(false);
+    setTask("");
+  };
 
   return (
     <div className="min-h-auto flex items-center justify-center bg-background">
@@ -139,54 +139,39 @@ function RouteComponent() {
           <div className="text-center font-semibold">
             {isWork ? "Work Time" : "Break Time"}
           </div>
-          {task && <div className="text-center">Current Task: {task}</div>}
           <div>
-            <div className="flex justify-center space-x-2 w-full">
+            {!isRunning && (
+              <Input
+                id="task"
+                placeholder="Enter task name"
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                className="col-span-3"
+              />
+            )}
+            {isRunning && (
+              <p>{task ? `Current Task: ${task}` : "No task name provided"}</p>
+            )}
+            <div className="flex justify-center space-x-2 w-full mt-2">
               <Button
                 onClick={isRunning ? stopTimer : startTimer}
-                className="w-1/2"
+                className="w-full mt-1"
               >
                 {isRunning ? "Pause" : "Start"}
               </Button>
-              <Button onClick={resetTimer} variant="outline" className="w-1/2">
-                Reset
-              </Button>
             </div>
-            <Button variant="destructive" className="w-full mt-1">
-              End Task
-            </Button>
+            {isRunning && (
+              <Button
+                variant="destructive"
+                className="w-full mt-1"
+                onClick={endTask}
+              >
+                End Task
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>What are you working on?</DialogTitle>
-            <DialogDescription>
-              Enter the task you'll be focusing on during this Pomodoro session.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Input
-              id="task"
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                setShowModal(false);
-                if (task) startTimer();
-              }}
-            >
-              Start Pomodoro
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
